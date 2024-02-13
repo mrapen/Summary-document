@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="/icons">
+    <file>src/icons/summarize_black.svg</file>
+    <file>src/icons/file_open_white.svg</file>
+  </qresource>
+</RCC>
