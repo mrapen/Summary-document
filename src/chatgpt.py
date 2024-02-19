@@ -1,30 +1,59 @@
 import g4f
+import src.config as cfg
+import copy
 
-def SummarizeWithGPT(document: list[str], document_type: str, analysis_purpose: str, response_format: str, additional_requirements: str)->str:
+def SummarizeWithGPT(document: list[str],
+                     document_type: str,
+                     analysis_purpose: str,
+                     response_format: str,
+                     additional_requirements: str,
+                     prompt_lang: str,
+                     enableEnd: bool = False)->str:
     
     if len(document) == 0 or document_type == "" or analysis_purpose == "" or response_format == "" or additional_requirements == "":
         return
 
-    summary = ""
+    summ_frag = ""
 
-    for n in range(len(document)):
-        page = document[n]
+    msg = copy.deepcopy(cfg.message[prompt_lang]["Message"][0])
+    msg["content"] = msg["content"] \
+        .format(document_type,analysis_purpose,response_format,additional_requirements)
+    
+    frag = copy.deepcopy(cfg.message[prompt_lang]["Fragment"][0])
+    for chunk in document:
+        cf = copy.deepcopy(frag)
+        cf["content"] = cf["content"].format(chunk)
         response = g4f.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": 
-                f"""Ви - чат gpt-система, яка може аналізувати документи і надавати резюме або звіти.
-                Я дам вам написаний мною документ, а ви повинні проаналізувати його за наступними параметрами: 
-                Тип документа: {document_type} 
-                Мета аналізу: {analysis_purpose} 
-                Формат відповіді: {response_format} 
-                Додаткові вимоги: {additional_requirements}"""},
-                {"role": "user", "content": f"Проаналізуйте та узагальніть цей документ: {page}"},
-                ],
+            model=cfg.engine,
+            messages=[msg,cf],
+            stream=True
         )
         for part in response:
-            summary += part
-        summary += "\n"
+            summ_frag += part
+        summ_frag += "\f"
+        
+    summ = copy.deepcopy(cfg.message[prompt_lang]["Summarize"][0])
+    summ["content"] = summ["content"].format(summ_frag)
+    res = g4f.ChatCompletion.create(
+        model=cfg.engine,
+        messages=[msg, summ],
+    )
+
+    output = ""
+    for part in res:
+        output += part
     
-    return summary
+    if enableEnd:
+        
+        rmv = copy.deepcopy(cfg.message[prompt_lang]["Remove"])
+        rmv[0]["content"] = rmv[0]["content"].format(output)
+        response = g4f.ChatCompletion.create(
+            model=cfg.engine,
+            messages=rmv,
+        )
+
+        for part in response:
+            output += part
+
+    return output
     
