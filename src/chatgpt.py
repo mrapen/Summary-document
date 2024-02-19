@@ -7,8 +7,7 @@ def SummarizeWithGPT(document: list[str],
                      analysis_purpose: str,
                      response_format: str,
                      additional_requirements: str,
-                     prompt_lang: str,
-                     enableEnd: bool = False)->str:
+                     prompt_lang: str)->str:
     
     if len(document) == 0 or document_type == "" or analysis_purpose == "" or response_format == "" or additional_requirements == "":
         return
@@ -42,18 +41,6 @@ def SummarizeWithGPT(document: list[str],
     output = ""
     for part in res:
         output += part
-    
-    if enableEnd:
-        
-        rmv = copy.deepcopy(cfg.message[prompt_lang]["Remove"])
-        rmv[0]["content"] = rmv[0]["content"].format(output)
-        response = g4f.ChatCompletion.create(
-            model=cfg.engine,
-            messages=rmv,
-        )
-
-        for part in response:
-            output += part
 
     return output
     
