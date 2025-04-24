@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QMainWindow, QFileDialog
 from src.design.ui_mainwin import Ui_MainWindow
-from src.convert import ConvertToText
-from src.chatgpt import SummarizeWithGPT
+from src.convert import convert_to_text
+from src.model import Summarization
 
 
 class App(QMainWindow):
@@ -9,28 +9,26 @@ class App(QMainWindow):
         super(App, self).__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self.document: list[str]
+        self.document: list
         self.summary: str
         self.ui.btn_open_file.clicked.connect(self.OpenFile)
         self.ui.btn_summarize.clicked.connect(self.Summarize)
         self.ui.btn_save_summary.clicked.connect(self.SaveSummary)
+        self.model = Summarization()
     
 
     def OpenFile(self):
         file_path = QFileDialog.getOpenFileName(self, "Open File", "", "All files (*);;PDF file (*.pdf);; DOCX files (*.docx);; TXT files (*.txt)")[0]
-        if file_path == "": return
+        if file_path == "":
+            return
         self.ui.le_path.setText(str(file_path))
-        self.document = ConvertToText(file_path)
+        self.document = convert_to_text(file_path)
         
 
     def Summarize(self):
-        prompt_1 = self.ui.te_prompt_1.toPlainText()
-        prompt_2 = self.ui.te_prompt_2.toPlainText()
-        prompt_3 =  self.ui.te_prompt_3.toPlainText()
-        prompt_4 =  self.ui.te_prompt_4.toPlainText()
+        prompt = self.ui.te_prompt_1.toPlainText()
         lang = self.ui.cb_prompt_lang.currentText()
-
-        self.summary = SummarizeWithGPT(self.document, prompt_1, prompt_2, prompt_3, prompt_4, lang)
+        self.summary = self.model.summarize_with_ai(self.document, prompt, lang)
         self.ui.te_response.setText(self.summary)
         
 
